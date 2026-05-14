@@ -6,9 +6,23 @@ Usage: python run.py [--city CITY] [--lat LAT] [--lon LON] [--port PORT] [--rss 
 
 import argparse, json, urllib.request, urllib.parse
 import xml.etree.ElementTree as ET
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from datetime import datetime
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
+from datetime import datetime, timedelta
 import threading, time, os, re
+
+# Google Calendar API imports
+try:
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+    GOOGLE_API_AVAILABLE = True
+    print("DEBUG: Google API libraries loaded successfully.")
+except ImportError as e:
+    GOOGLE_API_AVAILABLE = False
+    print(f"DEBUG: Google API libraries failed to load: {e}")
+
+SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 DEFAULT_RSS_FEEDS = [
     {"name": "NHK 主要",     "url": "https://www3.nhk.or.jp/rss/news/cat0.xml"},
@@ -35,6 +49,63 @@ def cache_get(k):
 def cache_set(k, v):
     with _lock:
         _cache[k] = {"ts": time.time(), "data": v}
+
+def get_calendar_service():
+    if not GOOGLE_API_AVAILABLE:
+        print("DEBUG: GOOGLE_API_AVAILABLE is False.")
+        return None
+    creds = None
+    if os.path.exists('token.json'):
+        print("DEBUG: Loading credentials from token.json")
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            print("DEBUG: Refreshing expired credentials")
+            creds.refresh(Request())
+        else:
+            if not os.path.exists('credentials.json'):
+                print("DEBUG: credentials.json not found.")
+                return None
+            print("DEBUG: Starting local server for authentication...")
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+    return build('calendar', 'v3', credentials=creds)
+
+def fetch_calendar_events(days=1):
+    key = f"calendar_{days}"
+    if c := cache_get(key): return c
+    
+    service = get_calendar_service()
+    if not service:
+        return {"error": "Google Calendar credentials not found or API not initialized."}
+
+    try:
+        now = datetime.utcnow().isoformat() + 'Z'
+        end = (datetime.utcnow() + timedelta(days=days)).isoformat() + 'Z'
+        
+        events_result = service.events().list(calendarId='primary', timeMin=now,
+                                              timeMax=end, singleEvents=True,
+                                              orderBy='startTime').execute()
+        events = events_result.get('items', [])
+        
+        result = []
+        for event in events:
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            end_ev = event['end'].get('dateTime', event['end'].get('date'))
+            result.append({
+                "summary": event.get('summary', '(No title)'),
+                "start": start,
+                "end": end_ev,
+                "location": event.get('location', '')
+            })
+        
+        cache_set(key, result)
+        return result
+    except Exception as e:
+        print(f"DEBUG: Error fetching calendar events: {e}")
+        return {"error": str(e)}
 
 def fetch_weather(lat, lon, city):
     key = f"wx_{lat}_{lon}"
@@ -139,6 +210,10 @@ class Handler(BaseHTTPRequestHandler):
         elif p == "/api/weather":    self._json(fetch_weather(self.config["lat"],self.config["lon"],self.config["city"]))
         elif p == "/api/news":       self._json([fetch_rss(f["url"],f["name"]) for f in self.config["feeds"]])
         elif p == "/api/disaster":   self._json([fetch_rss(f["url"],f["name"],10) for f in DISASTER_FEEDS])
+        elif p == "/api/calendar":
+            query = urllib.parse.parse_qs(self.path.split("?")[1]) if "?" in self.path else {}
+            days = int(query.get("days", [1])[0])
+            self._json(fetch_calendar_events(days))
         elif p == "/api/images":     self._json(self._imgs())
         elif p.startswith("/images/"): self._img(p)
         else: self.send_error(404)
@@ -217,9 +292,14 @@ def main():
                       "mouse_hide":    args.mouse_hide,
                       "wake_lock":     args.wake_lock}
 
+    # Pre-auth Google Calendar to ensure browser opens immediately
+    if GOOGLE_API_AVAILABLE:
+        print("DEBUG: Pre-authenticating Google Calendar...")
+        get_calendar_service()
+
     print(f"Hiroba News Smart Monitor v1.1\nhttp://localhost:{args.port}")
     try:
-        HTTPServer(("localhost", args.port), Handler).serve_forever()
+        ThreadingHTTPServer(("localhost", args.port), Handler).serve_forever()
     except KeyboardInterrupt:
         print("\nStopped")
 
