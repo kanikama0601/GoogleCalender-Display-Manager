@@ -16,9 +16,9 @@
 
     :root {
       --bg: #0b0f14;
-      --panel: rgba(255, 255, 255, 0.055);
+      --panel: rgba(0, 0, 0, 0.4);
       --panel-hover: rgba(255, 255, 255, 0.085);
-      --border: rgba(255, 255, 255, 0.10);
+      --border: rgba(255, 255, 255, 0.15);
       --border-h: rgba(255, 255, 255, 0.22);
       --blur: blur(18px);
       --text: rgba(255, 255, 255, 0.92);
@@ -31,7 +31,7 @@
       --danger-bdr: rgba(255, 71, 87, 0.40);
       --safe: #2ed573;
       --ticker-h: 44px;
-      --left-w: 310px;
+      --left-w: 420px;
       --header-h: 0px;
     }
 
@@ -44,7 +44,7 @@
     }
 
     body {
-      font-family: 'Noto Sans JP', sans-serif;
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
       color: var(--text);
     }
 
@@ -199,8 +199,6 @@
       padding: 18px 20px 14px;
       border-bottom: 1px solid var(--border);
       background: rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
     }
 
     #time-display {
@@ -245,8 +243,6 @@
       padding: 14px 20px;
       border-bottom: 1px solid var(--border);
       background: rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
     }
 
     .wn-row {
@@ -309,14 +305,61 @@
     .wn-stat-v {
       font-family: 'Noto Sans JP', sans-serif;
       font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      margin-top: 2px;
     }
 
     .wn-stat-u {
       font-size: 9px;
       opacity: 0.5;
+    }
+
+    #hourly-block {
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.10);
+    }
+
+    #hourly-strip {
+      display: flex;
+      gap: 4px;
+      padding: 0 8px 10px;
+      overflow: hidden;
+    }
+
+    .hc {
+      flex: 1;
+      text-align: center;
+      min-width: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 2px;
+    }
+
+    .hc-t {
+      font-size: 11px;
+      color: var(--ghost);
+      white-space: nowrap;
+    }
+
+    .hc-i {
+      font-size: 22px;
+      margin: 4px 0;
+    }
+
+    .hc-tp {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .weekly-label {
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--ghost);
+      margin-bottom: 8px;
+      padding-left: 4px;
     }
 
     .cal-card {
@@ -330,11 +373,19 @@
       border-left: 3px solid var(--accent);
     }
 
+    .cal-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 10px;
+    }
+
     .cal-time {
       font-size: 11px;
       color: var(--accent);
       font-weight: 700;
-      margin-bottom: 4px;
+      flex-shrink: 0;
     }
 
     .cal-summary {
@@ -347,7 +398,21 @@
     .cal-loc {
       font-size: 11px;
       color: var(--ghost);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+
+    .cal-desc {
+      font-size: 11px;
+      color: var(--soft);
       margin-top: 4px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     #calendar-today-block {
@@ -457,8 +522,8 @@
 
     .cal-cell {
       min-height: 60px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
       padding: 6px 4px;
       display: flex;
@@ -478,7 +543,7 @@
     }
 
     .cal-cell.other-month {
-      opacity: 0.28;
+      opacity: 0.4;
     }
 
     .cal-cell.today .cal-cell-day {
@@ -512,24 +577,31 @@
       color: rgba(255, 255, 255, 0.35);
     }
 
-    .cal-cell-dots {
+    .cal-cell-titles {
+      width: 100%;
       display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
-      justify-content: center;
+      flex-direction: column;
+      gap: 1px;
       margin-top: 2px;
+      overflow: hidden;
     }
 
-    .cal-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-      flex-shrink: 0;
+    .cal-ev-label {
+      font-size: 11px;
+      line-height: 1.2;
+      padding: 2px 4px;
+      background: rgba(94, 196, 255, 0.15);
+      color: rgba(255, 255, 255, 0.9);
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left: 2px solid var(--accent);
     }
 
-    .cal-dot.allday {
-      background: var(--accent-warm);
+    .cal-ev-label.allday {
+      background: rgba(255, 179, 71, 0.2);
+      border-left-color: var(--accent-warm);
     }
 
     /* Removed .cal-cell.selected and .cal-cell:hover as requested */
@@ -602,8 +674,6 @@
       padding: 10px 14px 10px;
       border-bottom: 1px solid var(--border);
       background: rgba(0, 0, 0, 0.18);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
     }
 
     .forex-updated {
@@ -765,6 +835,11 @@
         <div class="loader">表示されない場合、インターネット接続とJavascript、Pythonを確認してください</div>
       </div>
 
+      <div id="hourly-block">
+        <div class="weekly-label" style="padding:8px 12px 4px;margin:0;">今日の時間別</div>
+        <div id="hourly-strip" class="drag-scroll"></div>
+      </div>
+
       <div id="calendar-today-block" class="drag-scroll">
         <div class="weekly-label" style="padding:4px 4px 10px;">今日の予定</div>
         <div id="calendar-today-list"></div>
@@ -889,14 +964,18 @@
       }
       list.innerHTML = events.map(ev => {
         const start = new Date(ev.start);
+        const end = new Date(ev.end);
         const timeStr = ev.start.length > 10
-          ? `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`
+          ? `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')} – ${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`
           : '終日';
         return `
       <div class="cal-card">
-        <div class="cal-time">${timeStr}</div>
+        <div class="cal-header-row">
+          <div class="cal-time">${timeStr}</div>
+          ${ev.location ? `<div class="cal-loc">📍 ${h(ev.location)}</div>` : ''}
+        </div>
         <div class="cal-summary">${h(ev.summary)}</div>
-        ${ev.location ? `<div class="cal-loc">📍 ${h(ev.location)}</div>` : ''}
+        ${ev.description ? `<div class="cal-desc">${h(ev.description)}</div>` : ''}
       </div>`;
       }).join('');
     }
@@ -950,15 +1029,17 @@
         const evs = _allEvents[ds] || [];
         const hasEv = evs.length > 0;
 
-        const dots = evs.slice(0, 3).map(ev =>
-          `<div class="cal-dot${ev.start.length <= 10 ? ' allday' : ''}"></div>`
-        ).join('');
+        const labels = evs.slice(0, 3).map(ev => {
+          const start = new Date(ev.start);
+          const timePrefix = ev.start.length > 10 ? `${start.getHours()}:${String(start.getMinutes()).padStart(2, '0')}: ` : '';
+          return `<div class="cal-ev-label${ev.start.length <= 10 ? ' allday' : ''}">${timePrefix}${h(ev.summary)}</div>`;
+        }).join('');
 
         cells.push(`
       <div class="cal-cell${isThisMonth ? '' : ' other-month'}${isToday ? ' today' : ''}${hasEv ? ' has-event' : ''}"
            data-date="${ds}">
         <div class="cal-cell-day">${cur.getDate()}</div>
-        ${hasEv ? `<div class="cal-cell-dots">${dots}</div>` : ''}
+        ${hasEv ? `<div class="cal-cell-titles">${labels}</div>` : ''}
       </div>`);
         cur.setDate(cur.getDate() + 1);
       }
@@ -1007,6 +1088,14 @@
         <div class="wn-stat"><div class="wn-stat-l">風速</div><div class="wn-stat-v">${w.wind}<span class="wn-stat-u">km/h</span></div></div>
         <div class="wn-stat"><div class="wn-stat-l">降水</div><div class="wn-stat-v">${w.precip}<span class="wn-stat-u">mm</span></div></div>
       </div>`;
+
+        document.getElementById('hourly-strip').innerHTML =
+          (w.hourly || []).map(x => `
+        <div class="hc">
+          <div class="hc-t">${x.time}</div>
+          <div class="hc-i">${x.icon}</div>
+          <div class="hc-tp">${x.temp}°</div>
+        </div>`).join('');
 
       } catch (e) {
         document.getElementById('weather-now').innerHTML =

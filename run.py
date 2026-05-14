@@ -80,10 +80,19 @@ def fetch_calendar_events(days=1):
         return {"error": "Google Calendar credentials not found or API not initialized."}
 
     try:
-        now = datetime.utcnow().isoformat() + 'Z'
-        end = (datetime.utcnow() + timedelta(days=days)).isoformat() + 'Z'
+        from datetime import timezone as tz
+        jst = tz(timedelta(hours=9))
+        now_jst = datetime.now(jst)
         
-        events_result = service.events().list(calendarId='primary', timeMin=now,
+        if days == 1:
+            # Strictly today (JST)
+            start = now_jst.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+            end = now_jst.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
+        else:
+            start = now_jst.isoformat()
+            end = (now_jst + timedelta(days=days)).isoformat()
+        
+        events_result = service.events().list(calendarId='primary', timeMin=start,
                                               timeMax=end, singleEvents=True,
                                               orderBy='startTime').execute()
         events = events_result.get('items', [])
@@ -96,7 +105,8 @@ def fetch_calendar_events(days=1):
                 "summary": event.get('summary', '(No title)'),
                 "start": start,
                 "end": end_ev,
-                "location": event.get('location', '')
+                "location": event.get('location', ''),
+                "description": event.get('description', '')
             })
         
         cache_set(key, result)
@@ -119,14 +129,18 @@ def fetch_weather(lat, lon, city):
         with urllib.request.urlopen(url, timeout=8) as r:
             data = json.loads(r.read())
 
-        WMO = {0:"快晴",1:"晴れ",2:"一部曇り",3:"曇り",
-               45:"霧",48:"霧氷",51:"霧雨(弱)",53:"霧雨",55:"霧雨(強)",
-               61:"小雨",63:"雨",65:"大雨",71:"小雪",73:"雪",75:"大雪",
-               80:"にわか雨",81:"雨",82:"激しい雨",95:"雷雨",96:"雷雨+ひょう",99:"激しい雷雨"}
-        ICO = {0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",48:"🌫",
-               51:"🌦",53:"🌦",55:"🌧",61:"🌧",63:"🌧",65:"🌧",
-               71:"🌨",73:"❄️",75:"❄️",80:"🌦",81:"🌧",82:"⛈",
-               95:"⛈",96:"⛈",99:"⛈"}
+        WMO = {0:"快晴", 1:"晴れ", 2:"時々曇り", 3:"曇り",
+               45:"霧", 48:"霧氷", 51:"霧雨(弱)", 53:"霧雨", 55:"霧雨(強)",
+               56:"氷雨(弱)", 57:"氷雨", 61:"小雨", 63:"雨", 65:"大雨",
+               66:"凍雨(小)", 67:"凍雨", 71:"小雪", 73:"雪", 75:"大雪",
+               77:"ひょう", 80:"にわか雨", 81:"雨", 82:"激しい雨",
+               85:"雪(弱)", 86:"雪(強)", 95:"雷雨", 96:"雷雨(雹)", 99:"猛烈な雷雨"}
+        ICO = {0:"☀️", 1:"🌤", 2:"⛅", 3:"☁️", 45:"🌫", 48:"🌫",
+               51:"🌦", 53:"🌦", 55:"🌧", 56:"🌨", 57:"🌨",
+               61:"🌧", 63:"🌧", 65:"🌧", 66:"🌨", 67:"🌨",
+               71:"🌨", 73:"❄️", 75:"❄️", 77:"🌨",
+               80:"🌦", 81:"🌧", 82:"⛈", 85:"🌨", 86:"❄️",
+               95:"⛈", 96:"⛈", 99:"⛈"}
 
         cur    = data["current"]
         code   = cur["weather_code"]
@@ -143,15 +157,28 @@ def fetch_weather(lat, lon, city):
                               "precip":round(daily["precipitation_sum"][i],1)})
 
         hourly_data = []
+        # Force JST for date matching
+        from datetime import timezone as tz
+        jst = tz(timedelta(hours=9))
+        today_str = datetime.now(jst).strftime("%Y-%m-%d")
+
         for i in range(len(hourly["time"])):
-            t  = hourly["time"][i]
-            h  = int(t[11:13])
-            if i < 24 and h % 2 == 0:
+            t_str = hourly["time"][i]
+            # Only today
+            if not t_str.startswith(today_str): continue
+            
+            h = int(t_str[11:13])
+            # Only 8:00 to 20:00 AND every 2 hours
+            if 8 <= h <= 20 and h % 2 == 0:
                 hc = hourly["weather_code"][i]
-                hourly_data.append({"time":t[11:16],
-                                    "temp":round(hourly["temperature_2m"][i],1),
-                                    "icon":ICO.get(hc,"🌡")})
-            if len(hourly_data) >= 12: break
+                hourly_data.append({
+                    "time": t_str[11:16],
+                    "temp": round(hourly["temperature_2m"][i], 1),
+                    "icon": ICO.get(hc, "🌡")
+                })
+        
+        # Only take the 7 slots for today (8,10,12,14,16,18,20)
+        hourly_data = hourly_data[:7]
 
         result = {"city":city,"temp":round(cur["temperature_2m"],1),
                   "feels":round(cur["apparent_temperature"],1),"code":code,
@@ -198,28 +225,6 @@ def fetch_rss(url, name, limit=20):
     except Exception as e:
         return {"name":name,"url":url,"items":[],"error":str(e)}
 
-def fetch_disaster_filtered():
-    """
-    防災フィードを取得し、真の緊急情報（ALERT_KEYWORDS に合致するもの）だけを返す。
-    extra.xml はそもそも特別警報・緊急情報専用フィードなので全件採用。
-    regular.xml は警報キーワードで絞り込む。
-    """
-    results = []
-    for feed in DISASTER_FEEDS:
-        raw = fetch_rss(feed["url"], feed["name"], limit=30)
-        filtered_items = []
-        for it in raw.get("items", []):
-            # extra.xml は無条件採用、regular.xml はキーワードフィルタ
-            if "extra" in feed["url"] or is_alert(it["title"], it.get("desc","")):
-                filtered_items.append(it)
-        results.append({
-            "name": feed["name"],
-            "url":  feed["url"],
-            "items": filtered_items,
-            "error": raw.get("error"),
-        })
-    return results
-
 class Handler(BaseHTTPRequestHandler):
     config = {}
     def log_message(self, *a): pass
@@ -229,7 +234,6 @@ class Handler(BaseHTTPRequestHandler):
         if   p == "/":               self._html()
         elif p == "/api/weather":    self._json(fetch_weather(self.config["lat"],self.config["lon"],self.config["city"]))
         elif p == "/api/news":       self._json([fetch_rss(f["url"],f["name"]) for f in self.config["feeds"]])
-        elif p == "/api/disaster":   self._json([fetch_rss(f["url"],f["name"],10) for f in DISASTER_FEEDS])
         elif p == "/api/calendar":
             query = urllib.parse.parse_qs(self.path.split("?")[1]) if "?" in self.path else {}
             days = int(query.get("days", [1])[0])
