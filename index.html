@@ -445,6 +445,7 @@
     .cal-dow:last-child {
       color: var(--accent);
     }
+
     .cal-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -1002,18 +1003,9 @@
         </div>
       </div>
       <div class="wn-stats">
-        <div class="wn-stat">
-          <div class="wn-stat-l">湿度</div>
-          <div class="wn-stat-v">${w.humidity}<span class="wn-stat-u">%</span></div>
-        </div>
-        <div class="wn-stat">
-          <div class="wn-stat-l">風速</div>
-          <div class="wn-stat-v">${w.wind}<span class="wn-stat-u">km/h</span></div>
-        </div>
-        <div class="wn-stat">
-          <div class="wn-stat-l">降水</div>
-          <div class="wn-stat-v">${w.precip}<span class="wn-stat-u">mm</span></div>
-        </div>
+        <div class="wn-stat"><div class="wn-stat-l">湿度</div><div class="wn-stat-v">${w.humidity}<span class="wn-stat-u">%</span></div></div>
+        <div class="wn-stat"><div class="wn-stat-l">風速</div><div class="wn-stat-v">${w.wind}<span class="wn-stat-u">km/h</span></div></div>
+        <div class="wn-stat"><div class="wn-stat-l">降水</div><div class="wn-stat-v">${w.precip}<span class="wn-stat-u">mm</span></div></div>
       </div>`;
 
       } catch (e) {
