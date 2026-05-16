@@ -404,9 +404,9 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     ap = argparse.ArgumentParser(description="News Smart Monitor")
-    ap.add_argument("--city",         default="東京都")
-    ap.add_argument("--lat",          default=35.6895, type=float)
-    ap.add_argument("--lon",          default=139.6917, type=float)
+    ap.add_argument("--city",         default="高松市")
+    ap.add_argument("--lat",          default=34.3401, type=float)
+    ap.add_argument("--lon",          default=134.0434, type=float)
     ap.add_argument("--port",         default=8765, type=int)
     ap.add_argument("--rss",          nargs="*")
     ap.add_argument("--no-default-rss", action="store_true")
@@ -436,7 +436,7 @@ def main():
         print("DEBUG: Pre-authenticating Google Calendar...")
         get_calendar_service()
 
-    print(f"Hiroba News Smart Monitor v1.1\nhttp://localhost:{args.port}")
+    print(f"GoogleCalender Display Manager v1.0\nhttp://localhost:{args.port}")
     try:
         ThreadingHTTPServer(("", args.port), Handler).serve_forever()
     except KeyboardInterrupt:
