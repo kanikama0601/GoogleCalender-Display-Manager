@@ -53,21 +53,25 @@ def get_calendar_service():
         print("DEBUG: GOOGLE_API_AVAILABLE is False.")
         return None
     creds = None
-    if os.path.exists('token.json'):
-        print("DEBUG: Loading credentials from token.json")
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    token_path = os.path.join(os.path.dirname(__file__), 'data', 'token.json')
+    creds_path = os.path.join(os.path.dirname(__file__), 'data', 'credentials.json')
+    
+    if os.path.exists(token_path):
+        print(f"DEBUG: Loading credentials from {token_path}")
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             print("DEBUG: Refreshing expired credentials")
             creds.refresh(Request())
         else:
-            if not os.path.exists('credentials.json'):
-                print("DEBUG: credentials.json not found.")
+            if not os.path.exists(creds_path):
+                print(f"DEBUG: {creds_path} not found.")
                 return None
             print("DEBUG: Starting local server for authentication...")
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
+        os.makedirs(os.path.dirname(token_path), exist_ok=True)
+        with open(token_path, 'w') as token:
             token.write(creds.to_json())
     return build('calendar', 'v3', credentials=creds)
 
@@ -271,8 +275,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def _load_commands(self):
-        """commands.json を読み込んで返す。なければ空リスト。"""
-        fp = os.path.join(os.path.dirname(__file__), "commands.json")
+        """data/commands.json を読み込んで返す。なければ空リスト。"""
+        fp = os.path.join(os.path.dirname(__file__), "data", "commands.json")
         if not os.path.isfile(fp):
             return []
         try:
@@ -287,8 +291,8 @@ class Handler(BaseHTTPRequestHandler):
             return [{"name": f"⚠ commands.json 読み込みエラー: {e}", "cmd": ""}]
 
     def _music_tree(self):
-        """musicフォルダを再帰的に走査してツリー構造を返す"""
-        music_dir = os.path.join(os.path.dirname(__file__), "music")
+        """data/musicフォルダを再帰的に走査してツリー構造を返す"""
+        music_dir = os.path.join(os.path.dirname(__file__), "data", "music")
         if not os.path.isdir(music_dir):
             return []
         AUDIO_EXT = {".mp3", ".flac", ".wav", ".ogg", ".m4a", ".aac", ".opus"}
@@ -319,7 +323,7 @@ class Handler(BaseHTTPRequestHandler):
         # URLデコード
         rel = urllib.parse.unquote(url_path[len("/music/"):])
         # パストラバーサル防止
-        music_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "music"))
+        music_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "data", "music"))
         fp = os.path.realpath(os.path.join(music_dir, rel))
         if not fp.startswith(music_dir) or not os.path.isfile(fp):
             self.send_error(404)
@@ -354,13 +358,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _imgs(self):
-        d = os.path.join(os.path.dirname(__file__),"images")
+        d = os.path.join(os.path.dirname(__file__), "data", "images")
         if not os.path.isdir(d): return []
         ext = {".png",".jpg",".jpeg",".webp",".gif"}
         return ["/images/"+f for f in sorted(os.listdir(d)) if os.path.splitext(f)[1].lower() in ext]
 
     def _img(self, p):
-        d = os.path.join(os.path.dirname(__file__),"images")
+        d = os.path.join(os.path.dirname(__file__), "data", "images")
         fn = os.path.basename(p)
         fp = os.path.join(d, fn)
         if not os.path.isfile(fp): self.send_error(404); return

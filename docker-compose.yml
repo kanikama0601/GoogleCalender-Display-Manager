@@ -5,11 +5,5 @@ services:
     ports:
       - "8765:8765"
     volumes:
-      - ./credentials.json:/app/credentials.json:ro
-      - ./token.json:/app/token.json
-      - ./images:/app/images
-      - ./music:/app/music
-      - ./commands.json:/app/commands.json:ro
+      - ./data:/app/data:rw
     restart: unless-stopped
-    # Optional: Command line arguments can be passed here
-    # command: ["python", "run.py", "--city", "東京都"]
