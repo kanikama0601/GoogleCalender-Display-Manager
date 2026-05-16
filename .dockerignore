@@ -7,9 +7,6 @@ token.json
 images
 music
 .python-version
-uv.lock
-pyproject.toml
-Dockerfile
 docker-compose.yml
 README.md
 LICENSE
