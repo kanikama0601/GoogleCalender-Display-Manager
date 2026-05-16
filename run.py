@@ -434,7 +434,7 @@ def main():
 
     print(f"Hiroba News Smart Monitor v1.1\nhttp://localhost:{args.port}")
     try:
-        ThreadingHTTPServer(("localhost", args.port), Handler).serve_forever()
+        ThreadingHTTPServer(("", args.port), Handler).serve_forever()
     except KeyboardInterrupt:
         print("\nStopped")
 
