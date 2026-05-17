@@ -13,6 +13,7 @@ from .utils import cache_get, cache_set
 try:
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
+    from google.oauth2 import service_account
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
     GOOGLE_API_AVAILABLE = True
@@ -33,26 +34,25 @@ DEFAULT_RSS_FEEDS = [
 def get_calendar_service():
     if not GOOGLE_API_AVAILABLE:
         return None
-    creds = None
-    # Assuming data directory is at the root
+
     data_dir = os.path.join(os.getcwd(), 'data')
-    token_path = os.path.join(data_dir, 'token.json')
-    creds_path = os.path.join(data_dir, 'credentials.json')
+    service_account_path = os.path.join(data_dir, 'service_account_key.json')
     
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not os.path.exists(creds_path):
-                return None
-            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-            creds = flow.run_local_server(port=0)
-        os.makedirs(data_dir, exist_ok=True)
-        with open(token_path, 'w') as token:
-            token.write(creds.to_json())
-    return build('calendar', 'v3', credentials=creds)
+    if not os.path.exists(service_account_path):
+        print(f"Error: Cannot find service account file: {service_account_path}")
+        return None
+
+    try:
+        # Making Credentials data from JSON file
+        creds = service_account.Credentials.from_service_account_file(
+            service_account_path, 
+            scopes=SCOPES
+        )
+        return build('calendar', 'v3', credentials=creds)
+        
+    except Exception as e:
+        print(f"認証エラーが発生しました: {e}")
+        return None
 
 def fetch_calendar_events(days=1, start_offset=0):
     key = f"calendar_{days}_{start_offset}"
@@ -75,7 +75,7 @@ def fetch_calendar_events(days=1, start_offset=0):
             end_date = now_jst + timedelta(days=start_offset + days - 1)
             end = end_date.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
         
-        events_result = service.events().list(calendarId='primary', timeMin=start,
+        events_result = service.events().list(calendarId='tinlab.share@gmail.com', timeMin=start,
                                               timeMax=end, singleEvents=True,
                                               orderBy='startTime').execute()
         events = events_result.get('items', [])

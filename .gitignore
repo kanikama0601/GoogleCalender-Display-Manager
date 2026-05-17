@@ -1,3 +1,4 @@
-credentials.json
-token.json
+**/credentials.json
+**/service_account_key.json
+**/token.json
 **/__pycache__
