@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Hiroba News Smart Monitor v1.1</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+  <div id="bg-wrap">
+    <div class="bg-s" id="bg-a"></div>
+    <div class="bg-s" id="bg-b"></div>
+  </div>
+  <div id="bg-ov"></div>
+
+  <div id="app">
+
+    <div id="ticker-bar">
+      <div class="ticker-label">LIVE NEWS</div>
+      <div class="ticker-mask">
+        <div id="ticker-inner">
+          <span class="loader" style="padding:0 20px">表示されない場合、インターネット接続とJavascript、Pythonを確認してください</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="left-col">
+
+      <div id="clock-block">
+        <div id="time-display">
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <span id="th">--</span><span id="time-sep">:</span><span id="tm">--</span>
+          </div>
+          <div id="ts" style="font-size:0.28em;opacity:0.40;letter-spacing:2px;margin-top:2px;text-align:right">--</div>
+        </div>
+        <div id="date-line">----年 -月 -日（-）</div>
+        <div id="reiwa-line">令和--年 / 干支 --</div>
+        <div id="city-line">📍 …</div>
+      </div>
+
+      <div id="weather-now">
+        <div class="loader">表示されない場合、インターネット接続とJavascript、Pythonを確認してください</div>
+      </div>
+
+      <div id="hourly-block">
+        <div class="weekly-label" style="padding:8px 12px 4px;margin:0;">今日の時間別</div>
+        <div id="hourly-strip" class="drag-scroll"></div>
+      </div>
+
+      <div id="calendar-today-block" class="drag-scroll">
+        <div class="weekly-label" style="padding:4px 4px 10px;">今日の予定</div>
+        <div id="calendar-today-list"></div>
+      </div>
+
+    </div>
+
+    <div id="right-col">
+
+      <div id="forex-panel">
+        <div class="forex-cards">
+          <span class="forex-updated" id="forex-updated"></span>
+        </div>
+        <div class="forex-cards" id="forex-cards">
+          <div class="loader" style="padding:8px;width:100%">表示されない場合、インターネット接続とJavascript、Pythonを確認してください</div>
+        </div>
+      </div>
+
+      <div id="calendar-weekly-block" class="drag-scroll">
+        <div id="cal-grid-wrap">
+          <div class="cal-grid-nav">
+            <button class="cal-grid-nav-btn" id="cal-prev">&#8249;</button>
+            <div class="cal-grid-nav-title" id="cal-month-title">----年 -月</div>
+            <button class="cal-grid-nav-btn" id="cal-next">&#8250;</button>
+          </div>
+          <div class="cal-dow-row">
+            <div class="cal-dow">日</div>
+            <div class="cal-dow">月</div>
+            <div class="cal-dow">火</div>
+            <div class="cal-dow">水</div>
+            <div class="cal-dow">木</div>
+            <div class="cal-dow">金</div>
+            <div class="cal-dow">土</div>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+
+</html>
