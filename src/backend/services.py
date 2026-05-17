@@ -70,8 +70,10 @@ def fetch_calendar_events(days=1, start_offset=0):
             start = now_jst.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
             end = now_jst.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
         else:
-            start = (now_jst + timedelta(days=start_offset)).isoformat()
-            end = (now_jst + timedelta(days=start_offset + days)).isoformat()
+            start_date = now_jst + timedelta(days=start_offset)
+            start = start_date.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+            end_date = now_jst + timedelta(days=start_offset + days - 1)
+            end = end_date.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
         
         events_result = service.events().list(calendarId='primary', timeMin=start,
                                               timeMax=end, singleEvents=True,

@@ -9,15 +9,16 @@ let _selDate = null;
 export async function loadCalendar() {
   try {
     const todayData = await (await fetch('/api/calendar?days=1')).json();
-    // Fetch from 30 days ago to 60 days ahead to cover past and future in the grid
-    const monthlyData = await (await fetch('/api/calendar?days=60&start_offset=-30')).json();
-
-    if (todayData.error || monthlyData.error) {
-      throw new Error(todayData.error || monthlyData.error);
+    if (todayData.error) {
+      throw new Error(todayData.error);
     }
-
     renderTodayCalendar(todayData);
-    renderWeeklyCalendar(monthlyData);
+
+    const now = new Date();
+    _gridYear = now.getFullYear();
+    _gridMonth = now.getMonth();
+
+    await fetchGridEvents(_gridYear, _gridMonth);
   } catch (e) {
     const err = `<div class="loader">予定取得失敗: ${h(e.message)}<br><small>credentials.jsonがルートディレクトリに必要です</small></div>`;
     document.getElementById('calendar-today-list').innerHTML = err;
@@ -49,18 +50,49 @@ function renderTodayCalendar(events) {
   }).join('');
 }
 
-function renderWeeklyCalendar(events) {
-  _allEvents = {};
-  if (events && events.length) {
-    events.forEach(ev => {
-      const d = ev.start.slice(0, 10);
-      if (!_allEvents[d]) _allEvents[d] = [];
-      _allEvents[d].push(ev);
-    });
+async function fetchGridEvents(year, month) {
+  document.getElementById('cal-month-title').textContent = `${year}年 ${month + 1}月`;
+  document.getElementById('cal-grid').innerHTML = '<div class="loader">予定を読み込み中...</div>';
+
+  try {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+    const totalCells = lastDay.getDay() === 6 && firstDay.getDay() === 0 ? 42 :
+      (firstDay.getDay() + lastDay.getDate() > 35 ? 42 : 35);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startOfGrid = new Date(startDate);
+    startOfGrid.setHours(0, 0, 0, 0);
+
+    const diffMs = startOfGrid.getTime() - today.getTime();
+    const startOffset = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    const url = `/api/calendar?days=${totalCells}&start_offset=${startOffset}`;
+    const events = await (await fetch(url)).json();
+
+    if (events.error) {
+      throw new Error(events.error);
+    }
+
+    _allEvents = {};
+    if (events && events.length) {
+      events.forEach(ev => {
+        const d = ev.start.slice(0, 10);
+        if (!_allEvents[d]) _allEvents[d] = [];
+        _allEvents[d].push(ev);
+      });
+    }
+
+    renderGrid();
+  } catch (e) {
+    document.getElementById('cal-grid').innerHTML = `<div class="loader">予定取得失敗: ${h(e.message)}</div>`;
   }
-  const now = new Date();
-  if (!_gridYear) { _gridYear = now.getFullYear(); _gridMonth = now.getMonth(); }
-  renderGrid();
 }
 
 function renderGrid() {
@@ -110,12 +142,12 @@ export function initCalendarListeners() {
     _gridMonth--;
     if (_gridMonth < 0) { _gridMonth = 11; _gridYear--; }
     _selDate = null;
-    renderGrid();
+    fetchGridEvents(_gridYear, _gridMonth);
   });
   document.getElementById('cal-next').addEventListener('click', () => {
     _gridMonth++;
     if (_gridMonth > 11) { _gridMonth = 0; _gridYear++; }
     _selDate = null;
-    renderGrid();
+    fetchGridEvents(_gridYear, _gridMonth);
   });
 }
